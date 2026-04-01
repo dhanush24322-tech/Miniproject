@@ -8,7 +8,7 @@ services:
     plan: free
     envVars:
       - key: DATABASE_URL
-        value: "postgresql://postgres:Dhanush%402404@db.aovglxlifotjvymimayj.supabase.co:5432/postgres"
+        value: "postgresql://postgres.aovglxlifotjvymimayj:Dhanush%402404@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
       - key: FLASK_ENV
         value: production
       - key: CORS_ORIGINS

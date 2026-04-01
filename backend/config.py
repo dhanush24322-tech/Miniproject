@@ -15,7 +15,7 @@ class Config:
     DEBUG = True
 
     # --- Database (Supabase PostgreSQL) ---
-    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:Dhanush%402404@db.aovglxlifotjvymimayj.supabase.co:5432/postgres"
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres.aovglxlifotjvymimayj:Dhanush%402404@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- JWT ---
