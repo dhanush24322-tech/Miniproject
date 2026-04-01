@@ -1,9 +1,6 @@
-/**
- * Axios HTTP client instance with JWT interceptor.
- * All API calls go through this configured instance.
- */
 import axios from 'axios';
 
+// Ensure the base URL always ends with a trailing slash for relative path resolution
 const API_BASE_URL = import.meta.env.PROD 
   ? (import.meta.env.VITE_API_URL || '/api/') 
   : 'http://localhost:5000/api/';
@@ -15,30 +12,13 @@ const client = axios.create({
   },
 });
 
-// ── Request interceptor: attach JWT token ──
-client.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('dr_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// ── Response interceptor: handle auth errors ──
-client.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('dr_token');
-      localStorage.removeItem('dr_user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
+// Intercept requests to add the JWT token
+client.interceptors.request.use((config) => {
+  const token = localStorage.getItem('dr_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
 export default client;
-export { API_BASE_URL };

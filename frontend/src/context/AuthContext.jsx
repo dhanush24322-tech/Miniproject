@@ -1,7 +1,3 @@
-/**
- * Authentication context provider.
- * Manages user state, login, signup, and logout across the app.
- */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
@@ -13,7 +9,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check for existing session on mount
   useEffect(() => {
     const token = localStorage.getItem('dr_token');
     const savedUser = localStorage.getItem('dr_user');
@@ -21,25 +16,25 @@ export function AuthProvider({ children }) {
       try {
         setUser(JSON.parse(savedUser));
       } catch {
-        localStorage.removeItem('dr_token');
-        localStorage.removeItem('dr_user');
+        localStorage.clear();
       }
     }
     setLoading(false);
   }, []);
 
   const login = async (email, password) => {
+    // Relative path (no leading slash) for cloud compatibility
     const res = await client.post('auth/login', { email, password });
     const { token, user: userData } = res.data;
     localStorage.setItem('dr_token', token);
     localStorage.setItem('dr_user', JSON.stringify(userData));
     setUser(userData);
-    // Redirect based on role
     navigate(userData.role === 'organizer' ? '/organizer' : '/doctor');
     return userData;
   };
 
   const signup = async (data) => {
+    // Relative path (no leading slash) for cloud compatibility
     const res = await client.post('auth/signup', data);
     const { token, user: userData } = res.data;
     localStorage.setItem('dr_token', token);
@@ -50,15 +45,14 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('dr_token');
-    localStorage.removeItem('dr_user');
+    localStorage.clear();
     setUser(null);
     navigate('/login');
   };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }

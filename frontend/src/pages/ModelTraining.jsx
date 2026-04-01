@@ -1,34 +1,26 @@
-/**
- * Model Training page — configure, start training, view metrics, and manage models.
- */
 import { useState, useEffect, useRef } from 'react';
-import client from '../api/client';
+import Sidebar from '../components/Sidebar';
 import TrainingChart from '../components/TrainingChart';
+import client from '../api/client';
+import { Cpu, Play, RotateCcw, CheckCircle, Save } from 'lucide-react';
 
 export default function ModelTraining() {
   const [datasets, setDatasets] = useState([]);
   const [models, setModels] = useState([]);
   const [trainingStatus, setTrainingStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState({ dataset_id: '', model_name: '', epochs: 20 });
   const [message, setMessage] = useState({ type: '', text: '' });
   const pollRef = useRef(null);
 
-  // Training config
-  const [config, setConfig] = useState({
-    dataset_id: '',
-    model_name: '',
-    epochs: 20,
-    batch_size: 32,
-    learning_rate: 0.001,
-  });
-
   useEffect(() => {
     loadData();
+    startPolling();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
   const loadData = async () => {
     try {
+      // Relative paths (no leading slash) for cloud connectivity
       const [dsRes, modRes, statusRes] = await Promise.all([
         client.get('organizer/datasets'),
         client.get('organizer/models'),
@@ -37,14 +29,8 @@ export default function ModelTraining() {
       setDatasets(dsRes.data.datasets.filter((d) => d.status === 'ready'));
       setModels(modRes.data.models);
       setTrainingStatus(statusRes.data);
-
-      if (statusRes.data.is_training) {
-        startPolling();
-      }
     } catch {
       // ignore
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -56,22 +42,17 @@ export default function ModelTraining() {
         setTrainingStatus(res.data);
         if (!res.data.is_training) {
           clearInterval(pollRef.current);
-          pollRef.current = null;
-          loadData(); // Refresh models list
+          loadData();
         }
       } catch {
         // ignore
       }
-    }, 3000);
+    }, 2000);
   };
 
   const startTraining = async (e) => {
     e.preventDefault();
-    if (!config.dataset_id) {
-      setMessage({ type: 'error', text: 'Please select a dataset' });
-      return;
-    }
-
+    if (!config.dataset_id) return;
     setMessage({ type: '', text: '' });
 
     try {
@@ -79,10 +60,8 @@ export default function ModelTraining() {
         dataset_id: parseInt(config.dataset_id),
         model_name: config.model_name || `DR_Model_${Date.now()}`,
         epochs: parseInt(config.epochs),
-        batch_size: parseInt(config.batch_size),
-        learning_rate: parseFloat(config.learning_rate),
       });
-      setMessage({ type: 'success', text: res.data.message });
+      setMessage({ type: 'success', text: 'AI engine training started in backend!' });
       startPolling();
       // Delay and refresh
       setTimeout(() => {
@@ -99,7 +78,7 @@ export default function ModelTraining() {
       setMessage({ type: 'success', text: 'Model activated for predictions' });
       loadData();
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Activation failed' });
+      setMessage({ type: 'error', text: 'Activation failed' });
     }
   };
 
@@ -110,7 +89,7 @@ export default function ModelTraining() {
       setMessage({ type: 'success', text: 'Model deleted' });
       loadData();
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Delete failed' });
+      setMessage({ type: 'error', text: 'Delete failed' });
     }
   };
 
@@ -124,225 +103,145 @@ export default function ModelTraining() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="page-container">
-        <div className="loading-center"><div className="spinner spinner-lg"></div></div>
-      </div>
-    );
-  }
-
-  const isTraining = trainingStatus?.is_training;
-
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1 className="page-title">🧠 Model Training</h1>
-        <p className="page-subtitle">Train deep learning models on retinal image datasets</p>
-      </div>
+    <div className="dashboard-layout">
+      <Sidebar />
+      <main className="dashboard-content p-8">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold">AI Model <span className="gradient-text">Engine</span></h1>
+          <p className="text-slate-400">Configure, train, and activate Diabetic Retinopathy models</p>
+        </header>
 
-      {message.text && (
-        <div className={`alert alert-${message.type}`}>
-          {message.type === 'error' ? '⚠️' : '✅'} {message.text}
-        </div>
-      )}
+        {message.text && (
+          <div className={`alert ${message.type === 'error' ? 'alert-error' : 'alert-success'} mb-6`}>
+            {message.type === 'error' ? '⚠️' : '✅'} {message.text}
+          </div>
+        )}
 
-      {/* Training Configuration */}
-      {!isTraining && (
-        <div className="glass-card" style={{ padding: 'var(--space-xl)', marginBottom: 'var(--space-xl)' }}>
-          <h2 className="section-title">⚙️ Training Configuration</h2>
-          <form onSubmit={startTraining}>
-            <div className="config-grid" style={{ marginBottom: 'var(--space-md)' }}>
-              <div className="form-group">
-                <label className="form-label">Dataset</label>
-                <select
-                  className="form-input"
-                  value={config.dataset_id}
-                  onChange={(e) => setConfig({ ...config, dataset_id: e.target.value })}
-                  required
-                >
-                  <option value="">Select a dataset...</option>
-                  {datasets.map((ds) => (
-                    <option key={ds.id} value={ds.id}>
-                      {ds.name} ({ds.num_images} images)
-                    </option>
-                  ))}
-                </select>
+        {trainingStatus?.is_training ? (
+          <div className="glass-card p-8 mb-8 animate-pulse border-indigo-500/50">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <div className="animate-spin text-indigo-400">⚙️</div>
+                  Training in Progress...
+                </h2>
+                <p className="text-slate-400">{trainingStatus.message}</p>
               </div>
-
-              <div className="form-group">
-                <label className="form-label">Model Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g., DR_ResNet50_v1"
-                  value={config.model_name}
-                  onChange={(e) => setConfig({ ...config, model_name: e.target.value })}
-                />
+              <div className="text-right">
+                <div className="text-2xl font-bold text-indigo-400">{trainingStatus.progress}%</div>
+                <div className="text-sm text-slate-500">Global Progress</div>
               </div>
-
-              <div className="form-group">
-                <label className="form-label">Epochs</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  min="1"
-                  max="100"
-                  value={config.epochs}
-                  onChange={(e) => setConfig({ ...config, epochs: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Batch Size</label>
-                <select
-                  className="form-input"
-                  value={config.batch_size}
-                  onChange={(e) => setConfig({ ...config, batch_size: e.target.value })}
-                >
-                  <option value="8">8</option>
-                  <option value="16">16</option>
-                  <option value="32">32</option>
-                  <option value="64">64</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Learning Rate</label>
-                <select
-                  className="form-input"
-                  value={config.learning_rate}
-                  onChange={(e) => setConfig({ ...config, learning_rate: e.target.value })}
-                >
-                  <option value="0.01">0.01</option>
-                  <option value="0.001">0.001 (recommended)</option>
-                  <option value="0.0001">0.0001</option>
-                  <option value="0.00001">0.00001</option>
-                </select>
+            </div>
+            <div className="h-4 bg-slate-800 rounded-full overflow-hidden mb-6">
+              <div className="h-full bg-indigo-500 transition-all duration-500" style={{width: `${trainingStatus.progress}%`}}></div>
+            </div>
+            {/* Mock Chart Data for visualization during training */}
+            <TrainingChart data={[{name: 'Start', accuracy: 0, loss: 1}, {name: 'Now', accuracy: trainingStatus.progress * 0.8, loss: 1 - (trainingStatus.progress/100)}]} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1">
+              <div className="glass-card p-6">
+                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Play className="text-emerald-400" />
+                  New Training Session
+                </h2>
+                <form onSubmit={startTraining} className="space-y-4">
+                  <div className="form-group">
+                    <label className="block text-slate-400 mb-1">Select Dataset</label>
+                    <select 
+                      className="form-input w-full p-2 rounded bg-slate-800"
+                      value={config.dataset_id}
+                      onChange={(e) => setConfig({...config, dataset_id: e.target.value})}
+                      required
+                    >
+                      <option value="">-- Choose Dataset --</option>
+                      {datasets.map(ds => (
+                        <option key={ds.id} value={ds.id}>{ds.name} ({ds.num_images} images)</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="block text-slate-400 mb-1">Model Name</label>
+                    <input 
+                      type="text" 
+                      className="form-input w-full p-2 rounded bg-slate-800" 
+                      placeholder="e.g. ResNet50_V1" 
+                      value={config.model_name}
+                      onChange={(e) => setConfig({...config, model_name: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="block text-slate-400 mb-1">Epochs</label>
+                    <input 
+                      type="number" 
+                      className="form-input w-full p-2 rounded bg-slate-800" 
+                      value={config.epochs}
+                      onChange={(e) => setConfig({...config, epochs: e.target.value})}
+                      min="1" max="100"
+                    />
+                  </div>
+                  <button type="submit" className="btn btn-primary w-full p-3 rounded font-bold bg-indigo-600">
+                    Run AI Engine →
+                  </button>
+                </form>
               </div>
             </div>
 
-            <button type="submit" className="btn btn-success btn-lg" disabled={datasets.length === 0}>
-              🚀 Start Training
-            </button>
-
-            {datasets.length === 0 && (
-              <p style={{ color: 'var(--accent-orange)', fontSize: '0.8125rem', marginTop: 'var(--space-sm)' }}>
-                ⚠️ No datasets available. Upload a dataset first.
-              </p>
-            )}
-          </form>
-        </div>
-      )}
-
-      {/* Training Progress */}
-      {isTraining && (
-        <div className="glass-card" style={{ padding: 'var(--space-xl)', marginBottom: 'var(--space-xl)' }}>
-          <h2 className="section-title">🔄 Training in Progress</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-md)' }}>
-            {trainingStatus.message}
-          </p>
-          <div className="progress-bar-container" style={{ marginBottom: 'var(--space-sm)' }}>
-            <div className="progress-bar-fill" style={{ width: `${trainingStatus.progress}%` }}></div>
-          </div>
-          <div className="flex justify-between" style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-            <span>Epoch {trainingStatus.current_epoch} / {trainingStatus.total_epochs}</span>
-            <span>{trainingStatus.progress}%</span>
-          </div>
-
-          {/* Live Metrics */}
-          {trainingStatus.metrics?.length > 1 && (
-            <div style={{ marginTop: 'var(--space-xl)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
-              <TrainingChart metrics={trainingStatus.metrics} type="loss" />
-              <TrainingChart metrics={trainingStatus.metrics} type="accuracy" />
+            <div className="lg:col-span-2">
+              <div className="glass-card p-6">
+                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Save className="text-purple-400" />
+                  Saved AI Models
+                </h2>
+                <div className="table-container">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400">
+                        <th className="p-3">Model Details</th>
+                        <th className="p-3 text-center">Accuracy</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {models.map(m => (
+                        <tr key={m.id} className="border-b border-slate-800 hover:bg-slate-800/50">
+                          <td className="p-3">
+                            <div className="font-bold">{m.name}</div>
+                            <div className="text-xs text-slate-500">{m.epochs} Epochs • {new Date(m.created_at).toLocaleDateString()}</div>
+                          </td>
+                          <td className="p-3 text-center font-mono text-emerald-400">{(m.accuracy * 100).toFixed(1)}%</td>
+                          <td className="p-3">
+                            {m.is_active ? (
+                              <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs bg-emerald-400/10 px-2 py-1 rounded">
+                                <CheckCircle size={12} /> ACTIVE
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-xs px-2 py-1 bg-slate-800 rounded">INACTIVE</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-right">
+                            {!m.is_active && (
+                              <button onClick={() => activateModel(m.id)} className="text-indigo-400 hover:text-indigo-300 mr-4 text-xs font-bold">
+                                ACTIVATE
+                              </button>
+                            )}
+                            <button onClick={() => deleteModel(m.id)} className="text-rose-400 hover:text-rose-300">
+                              🗑️
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Completed training results */}
-      {trainingStatus?.status === 'completed' && !isTraining && trainingStatus.metrics?.length > 0 && (
-        <div style={{ marginBottom: 'var(--space-xl)' }}>
-          <div className="flex justify-between items-center mb-md">
-            <h2 className="section-title" style={{ marginBottom: 0 }}>📈 Last Training Results</h2>
-            <button className="btn btn-outline btn-sm" onClick={resetTraining}>Dismiss</button>
           </div>
-          <div className="alert alert-success">✅ {trainingStatus.message}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
-            <TrainingChart metrics={trainingStatus.metrics} type="loss" />
-            <TrainingChart metrics={trainingStatus.metrics} type="accuracy" />
-          </div>
-        </div>
-      )}
-
-      {trainingStatus?.status === 'failed' && !isTraining && (
-        <div style={{ marginBottom: 'var(--space-xl)' }}>
-          <div className="alert alert-error">❌ {trainingStatus.message}</div>
-          <button className="btn btn-outline btn-sm" onClick={resetTraining}>Dismiss</button>
-        </div>
-      )}
-
-      {/* Models Table */}
-      <h2 className="section-title" style={{ marginTop: 'var(--space-xl)' }}>🗂️ Trained Models ({models.length})</h2>
-      {models.length === 0 ? (
-        <div className="empty-state glass-card">
-          <div className="empty-icon">🧠</div>
-          <div className="empty-title">No models trained yet</div>
-          <div className="empty-text">Train your first model using the form above</div>
-        </div>
-      ) : (
-        <div className="model-table-wrap">
-          <table className="model-table">
-            <thead>
-              <tr>
-                <th>Model</th>
-                <th>Version</th>
-                <th>Dataset</th>
-                <th>Accuracy</th>
-                <th>Val Accuracy</th>
-                <th>Epochs</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {models.map((m) => (
-                <tr key={m.id}>
-                  <td style={{ fontWeight: 600 }}>{m.name}</td>
-                  <td>{m.version}</td>
-                  <td>{m.dataset_name}</td>
-                  <td>{(m.accuracy * 100).toFixed(2)}%</td>
-                  <td style={{ color: 'var(--accent-green)' }}>{(m.val_accuracy * 100).toFixed(2)}%</td>
-                  <td>{m.epochs}</td>
-                  <td>
-                    {m.is_active ? (
-                      <span className="badge badge-active">Active</span>
-                    ) : m.status === 'completed' ? (
-                      <span className="badge badge-inactive">Ready</span>
-                    ) : m.status === 'training' ? (
-                      <span className="badge badge-training">Training</span>
-                    ) : (
-                      <span className="badge badge-failed">Failed</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="flex gap-sm">
-                      {!m.is_active && m.status === 'completed' && (
-                        <button className="btn btn-primary btn-sm" onClick={() => activateModel(m.id)}>
-                          Activate
-                        </button>
-                      )}
-                      <button className="btn btn-danger btn-sm" onClick={() => deleteModel(m.id)}>
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 }
