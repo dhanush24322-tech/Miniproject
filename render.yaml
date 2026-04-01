@@ -4,7 +4,7 @@ services:
     name: dr-detection-api
     env: python
     buildCommand: "pip install -r backend/requirements.txt"
-    startCommand: "cd backend && gunicorn --bind 0.0.0.0:$PORT --timeout 60 app:app"
+    startCommand: "cd backend && PYTHONPATH=. gunicorn --bind 0.0.0.0:$PORT --timeout 60 app:app"
     plan: free
     envVars:
       - key: DATABASE_URL
