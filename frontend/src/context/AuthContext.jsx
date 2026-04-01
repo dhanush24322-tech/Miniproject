@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const res = await client.post('/auth/login', { email, password });
+    const res = await client.post('auth/login', { email, password });
     const { token, user: userData } = res.data;
     localStorage.setItem('dr_token', token);
     localStorage.setItem('dr_user', JSON.stringify(userData));
@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (data) => {
-    const res = await client.post('/auth/signup', data);
+    const res = await client.post('auth/signup', data);
     const { token, user: userData } = res.data;
     localStorage.setItem('dr_token', token);
     localStorage.setItem('dr_user', JSON.stringify(userData));
