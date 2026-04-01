@@ -12,7 +12,7 @@ services:
       - key: FLASK_ENV
         value: production
       - key: CORS_ORIGINS
-        value: "*" # To be restricted after first deploy
+        value: "https://dr-detection-ui.onrender.com,https://dr-detection-ui.onrender.com/"
 
   # --- 2. Frontend Dashboard (React/Vite) ---
   - type: web

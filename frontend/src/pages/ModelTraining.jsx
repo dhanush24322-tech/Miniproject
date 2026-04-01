@@ -30,9 +30,9 @@ export default function ModelTraining() {
   const loadData = async () => {
     try {
       const [dsRes, modRes, statusRes] = await Promise.all([
-        client.get('/organizer/datasets'),
-        client.get('/organizer/models'),
-        client.get('/organizer/training-status'),
+        client.get('organizer/datasets'),
+        client.get('organizer/models'),
+        client.get('organizer/training-status'),
       ]);
       setDatasets(dsRes.data.datasets.filter((d) => d.status === 'ready'));
       setModels(modRes.data.models);
@@ -52,7 +52,7 @@ export default function ModelTraining() {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        const res = await client.get('/organizer/training-status');
+        const res = await client.get('organizer/training-status');
         setTrainingStatus(res.data);
         if (!res.data.is_training) {
           clearInterval(pollRef.current);
@@ -75,7 +75,7 @@ export default function ModelTraining() {
     setMessage({ type: '', text: '' });
 
     try {
-      const res = await client.post('/organizer/train', {
+      const res = await client.post('organizer/train', {
         dataset_id: parseInt(config.dataset_id),
         model_name: config.model_name || `DR_Model_${Date.now()}`,
         epochs: parseInt(config.epochs),
@@ -86,7 +86,7 @@ export default function ModelTraining() {
       startPolling();
       // Delay and refresh
       setTimeout(() => {
-        client.get('/organizer/training-status').then((r) => setTrainingStatus(r.data));
+        client.get('organizer/training-status').then((r) => setTrainingStatus(r.data));
       }, 1000);
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to start training' });
@@ -95,7 +95,7 @@ export default function ModelTraining() {
 
   const activateModel = async (modelId) => {
     try {
-      await client.post(`/organizer/models/${modelId}/activate`);
+      await client.post(`organizer/models/${modelId}/activate`);
       setMessage({ type: 'success', text: 'Model activated for predictions' });
       loadData();
     } catch (err) {
@@ -106,7 +106,7 @@ export default function ModelTraining() {
   const deleteModel = async (modelId) => {
     if (!window.confirm('Delete this model permanently?')) return;
     try {
-      await client.delete(`/organizer/models/${modelId}`);
+      await client.delete(`organizer/models/${modelId}`);
       setMessage({ type: 'success', text: 'Model deleted' });
       loadData();
     } catch (err) {
@@ -116,7 +116,7 @@ export default function ModelTraining() {
 
   const resetTraining = async () => {
     try {
-      await client.post('/organizer/training-reset');
+      await client.post('organizer/training-reset');
       setTrainingStatus(null);
       loadData();
     } catch {

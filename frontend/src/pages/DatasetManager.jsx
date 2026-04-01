@@ -23,7 +23,7 @@ export default function DatasetManager() {
 
   const loadDatasets = async () => {
     try {
-      const res = await client.get('/organizer/datasets');
+      const res = await client.get('organizer/datasets');
       setDatasets(res.data.datasets);
     } catch {
       // ignore
@@ -68,7 +68,7 @@ export default function DatasetManager() {
     formData.append('description', description);
 
     try {
-      const res = await client.post('/organizer/datasets', formData, {
+      const res = await client.post('organizer/datasets', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => {
           setUploadProgress(Math.round((e.loaded / e.total) * 100));
@@ -85,7 +85,7 @@ export default function DatasetManager() {
   const deleteDataset = async (id) => {
     if (!window.confirm('Are you sure? This will permanently delete the dataset and all its associated models.')) return;
     try {
-      await client.delete(`/organizer/datasets/${id}`);
+      await client.delete(`organizer/datasets/${id}`);
       setMessage({ type: 'success', text: 'Dataset and associated models deleted' });
       loadDatasets();
     } catch (err) {
