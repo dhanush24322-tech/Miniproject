@@ -15,8 +15,9 @@ services:
         value: "*" # To be restricted after first deploy
 
   # --- 2. Frontend Dashboard (React/Vite) ---
-  - type: static_site
+  - type: web
     name: dr-detection-ui
+    runtime: static
     buildCommand: "cd frontend && npm install && npm run build"
     publishPath: "frontend/dist"
     envVars:
