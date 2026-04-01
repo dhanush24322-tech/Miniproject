@@ -1,0 +1,54 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv
+venv/
+ENV/
+
+# --- Flask/DB ---
+instance/
+.webassets-cache
+backend/dr_detection.db
+backend/storage/uploads/*
+backend/storage/datasets/*
+backend/storage/trained_models/*
+backend/storage/heatmaps/*
+!backend/storage/.gitkeep
+
+# --- Node/React ---
+node_modules/
+frontend/dist/
+.eslintcache
+.stylelintcache
+*.log
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
