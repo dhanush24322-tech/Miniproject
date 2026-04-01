@@ -1,0 +1,28 @@
+services:
+  # --- 1. AI Backend (Flask) ---
+  - type: web
+    name: dr-detection-api
+    env: python
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "cd backend && gunicorn app:app"
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        value: "postgresql://postgres:Dhanush%402404@db.aovglxlifotjvymimayj.supabase.co:5432/postgres"
+      - key: FLASK_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: "*" # To be restricted after first deploy
+
+  # --- 2. Frontend Dashboard (React/Vite) ---
+  - type: static
+    name: dr-detection-ui
+    env: static
+    buildCommand: "cd frontend && npm install && npm run build"
+    publishPath: "frontend/dist"
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: dr-detection-api
+          property: host

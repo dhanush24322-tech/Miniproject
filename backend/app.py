@@ -22,7 +22,10 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     JWTManager(app)
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    
+    # Allow CORS for Vercel deployment
+    allowed_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
     # Register blueprints
     from routes.auth import auth_bp
